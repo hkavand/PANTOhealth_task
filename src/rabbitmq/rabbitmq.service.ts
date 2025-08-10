@@ -26,8 +26,12 @@ export class RabbitmqService {
             const deviceId = Object.keys(payload)[0];
             const deviceData = payload[deviceId];
 
+            this.logger.log(`Device Data: ${JSON.stringify(deviceData)}`);
+
             // TODO: change time after receiving reply email
             const time = deviceData.time;
+
+            this.logger.log(`Time: ${time}`);
             const dataLength = deviceData.data.length;
 
             await this.xrayService.saveXrayData(deviceId, time, dataLength);

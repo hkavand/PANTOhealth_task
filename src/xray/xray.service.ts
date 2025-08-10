@@ -10,14 +10,35 @@ export class XrayService {
   ) {}
 
   async saveXrayData(deviceId: string, time: number, dataLength: number) {
-    // TODO: Implement data processing logic
-    // to extract required parameters from x-ray data
-    
     const newXray = new this.xrayModel({
       deviceId,
       time,
       dataLength,
     });
     return newXray.save();
+  }
+
+  async getAllXrays() {
+    return this.xrayModel.find().exec();
+  }
+
+  async getXrayById(id: string) {
+    return this.xrayModel.findById(id).exec();
+  }
+
+  async updateXray(id: string, updateXrayDto: { deviceId?: string; time?: number; dataLength?: number }) {
+    return this.xrayModel.findByIdAndUpdate(id, updateXrayDto, { new: true }).exec();
+  }
+
+  async deleteXray(id: string) {
+    return this.xrayModel.findByIdAndDelete(id).exec();
+  }
+
+  async filterXrays(deviceId?: string, time?: number) {
+    const filter: any = {};
+    if (deviceId) filter.deviceId = deviceId;
+    if (time) filter.time = time;
+
+    return this.xrayModel.find(filter).exec();
   }
 }

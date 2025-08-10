@@ -1,18 +1,20 @@
 import { Module } from '@nestjs/common';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { RabbitmqService } from './rabbitmq.service';
+import { XrayModule } from 'src/xray/xray.module';
 
 @Module({
   imports: [
+    XrayModule,
     RabbitMQModule.forRoot({
       exchanges: [
         {
           name: 'xray_exchange',
-          type: 'direct',         
+          type: 'direct',
         },
       ],
-      uri: 'amqp://guest:guest@localhost:5672',  
-      connectionInitOptions: { wait: false },   
+      uri: 'amqp://guest:guest@localhost:5672',
+      connectionInitOptions: { wait: false },
     }),
   ],
   providers: [RabbitmqService],  // Services that will handle message logic
