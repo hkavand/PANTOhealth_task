@@ -5,8 +5,9 @@ import { AppService } from './app.service';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Get('send-xray')
+  sendXrayData() {
+    this.appService.sendXrayData();
+    return { message: 'X-ray data sent successfully' };
   }
 }

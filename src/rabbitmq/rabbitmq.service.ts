@@ -14,26 +14,18 @@ export class RabbitmqService {
         routingKey: 'xray_data',
         queue: 'xray_queue',
     })
-    public async handleXrayData(message: any) {
-        this.logger.log('hah ha haaa');
-        // Here you can add your processing logic for the x-ray data
-    }
 
     async handleXrayMessage(msg: any) {
         try {
-            const payload = JSON.parse(msg.content.toString());
+            this.logger.log(`Received message: processing...`);
+            const payload = JSON.parse(msg);
 
             const deviceId = Object.keys(payload)[0];
             const deviceData = payload[deviceId];
+            const time = payload.time;
+            const dataLength = deviceData.length;
 
-            this.logger.log(`Device Data: ${JSON.stringify(deviceData)}`);
-
-            // TODO: change time after receiving reply email
-            const time = deviceData.time;
-
-            this.logger.log(`Time: ${time}`);
-            const dataLength = deviceData.data.length;
-
+            this.logger.log(`Done processing message: deviceId=${deviceId}, time=${time}, dataLength=${dataLength}`);
             await this.xrayService.saveXrayData(deviceId, time, dataLength);
 
         } catch (error) {
