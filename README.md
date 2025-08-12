@@ -81,10 +81,15 @@ Before running the applications, ensure you have the following installed:
   npm run test
   ```
 
-- **End-to-End Tests**:
+- **End-to-End Tests**:Before running e2e tests, ensure you have the required dependencies installed:
+   ```bash
+   npm install --save-dev mongodb-memory-server
+   ```
+   then run the tests:
    ```bash
    npm run test:e2e
    ```
+The e2e tests use an in-memory MongoDB database provided by mongodb-memory-server. This ensures that the tests are isolated and do not interact with the real database.
 
 ## Example Payload
 
@@ -100,4 +105,3 @@ The producer sends x-ray data in the following format:
   "time": 1735683480000
 }
 ```
-

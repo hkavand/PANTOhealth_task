@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, Res } from '@nestjs/common';
 import { XrayService } from './xray.service';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 
@@ -61,8 +61,13 @@ export class XrayController {
     @Get(':id')
     @ApiOperation({ summary: 'Get an x-ray by ID' })
     @ApiParam({ name: 'id', description: 'The ID of the x-ray', type: String })
-    async getXrayById(@Param('id') id: string) {
-        return this.xrayService.getXrayById(id);
+    async getXrayById(@Param('id') id: string, @Res() res) {
+        const xrayExists = await this.xrayService.getXrayById(id);
+        if (!xrayExists) {
+            return res.status(404).json({ statusCode: 404, message: `Xray with ID ${id} not found` });
+        }
+
+        return res.status(200).json(xrayExists);
     }
 
     @Put(':id')
@@ -100,7 +105,12 @@ export class XrayController {
     @Delete(':id')
     @ApiOperation({ summary: 'Delete an x-ray by ID' })
     @ApiParam({ name: 'id', description: 'The ID of the x-ray', type: String })
-    async deleteXray(@Param('id') id: string) {
-        return this.xrayService.deleteXray(id);
+    async deleteXray(@Param('id') id: string, @Res() res) {
+        const xrayExists = await this.xrayService.getXrayById(id);
+        if (!xrayExists) {
+            return res.status(404).json({ statusCode: 404, message: `Xray with ID ${id} not found` });
+        }
+        await this.xrayService.deleteXray(id);
+        return res.status(200).json(xrayExists);
     }
 }

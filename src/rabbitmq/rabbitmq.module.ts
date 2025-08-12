@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { RabbitmqService } from './rabbitmq.service';
-import { XrayModule } from 'src/xray/xray.module';
+import { XrayModule } from '../xray/xray.module';
 
 @Module({
   imports: [
