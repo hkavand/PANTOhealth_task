@@ -1,14 +1,13 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 
 async function bootstrap() {
-  process.env.MONGODB_URI = 'mongodb://localhost:27017/xraydb';
-
   const app = await NestFactory.create(AppModule);
 
-  // Swagger configuration
+  // Swagger config
   const config = new DocumentBuilder()
     .setTitle('X-Ray API')
     .setDescription('API documentation for the X-Ray project')

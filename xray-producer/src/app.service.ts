@@ -5,11 +5,21 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 export class AppService {
   constructor(private readonly amqpConnection: AmqpConnection) { }
 
+  private readonly exchange: string = process.env.NODE_ENV ===
+    process.env.TEST_ENV_NAME ?
+    process.env.RABBITMQ_EXCHANGE_TEST || 'xray_exchange_test' :
+    process.env.RABBITMQ_EXCHANGE || 'xray_exchange';
+
+  private readonly routingKey: string = process.env.NODE_ENV ===
+    process.env.TEST_ENV_NAME ?
+    process.env.RABBITMQ_ROUTING_KEY_TEST || 'xray_data_test' :
+    process.env.RABBITMQ_ROUTING_KEY || 'xray_data';
+
   private generateInt(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min
   }
 
-  sendXrayData() {
+  async sendXrayData() {
     let data: [number, [number, number, number]][] = []
     const datalength = this.generateInt(1, 10);
     for (let i = 0; i < datalength; i++) {
@@ -27,7 +37,11 @@ export class AppService {
       time: new Date().getSeconds(),
     };
 
-    this.amqpConnection.publish('xray_exchange', 'xray_data', JSON.stringify(sampleData));
-    console.log('Sent x-ray data:', sampleData);
+
+    const check = await this.amqpConnection.publish(this.exchange, this.routingKey, JSON.stringify(sampleData));
+    console.log('Exchange:', this.exchange, ', routingKey:', this.routingKey);
+
+    if (check) console.log('Sent x-ray data:', sampleData);
+    return check;
   }
 }

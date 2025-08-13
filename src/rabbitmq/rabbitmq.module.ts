@@ -9,11 +9,11 @@ import { XrayModule } from '../xray/xray.module';
     RabbitMQModule.forRoot({
       exchanges: [
         {
-          name: 'xray_exchange',
+          name: process.env.RABBITMQ_EXCHANGE || 'xray_exchange',
           type: 'direct',
         },
       ],
-      uri: 'amqp://guest:guest@localhost:5672',
+      uri: process.env.RABBITMQ_URL,
       connectionInitOptions: { wait: false },
     }),
   ],

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -20,7 +21,7 @@ jest.mock('@golevelup/nestjs-rabbitmq', () => ({
   AmqpConnection: jest.fn().mockImplementation(() => ({
     publish: jest.fn(),
   })),
-  RabbitSubscribe: jest.fn(() => () => { }), // Mock the RabbitSubscribe decorator
+  RabbitSubscribe: jest.fn(() => () => { }),
 }));
 
 // Mock the RabbitmqModule itself

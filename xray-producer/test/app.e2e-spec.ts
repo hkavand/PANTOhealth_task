@@ -1,13 +1,48 @@
+import 'dotenv/config';
+process.env.NODE_ENV = process.env.TEST_ENV_NAME;
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { App } from 'supertest/types';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import * as amqp from 'amqplib';
 
 describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication;
+  let channel: amqp.Channel;
+  let connection: amqp.Connection;
 
-  beforeEach(async () => {
+  async function consumeMessageFromQueue(queueName: string, rabbitmqUrl: string): Promise<any> {
+    connection = await amqp.connect(rabbitmqUrl);
+    channel = await connection.createChannel();
+
+    await channel.assertQueue(queueName);
+
+    // Consume a message with a timeout
+    const message = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`Timeout: No message received from queue "${queueName}" within ${1000}ms`));
+      }, 1000);
+
+      channel.consume(
+        queueName,
+        (msg) => {
+          if (msg) {
+            clearTimeout(timer);
+            const content = JSON.parse(msg.content.toString());
+            channel.ack(msg);
+            resolve(JSON.parse(content));
+          }
+        },
+        { noAck: false },
+      );
+    });
+
+    return message;
+  }
+
+  beforeAll(async () => {
+    console.log(process.env.NODE_ENV == process.env.TEST_ENV_NAME ? 'Running in test mode' : 'Running in production mode');
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -16,10 +51,25 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterAll(async () => {
+    if (app) await app.close();
+    //await closeConnection();
+  });
+
+  it('/send-xray (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/send-xray')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      message: 'X-ray data sent successfully',
+    });
+
+    console.log("X-ray data sent successfully");
+    const queueName = process.env.RABBITMQ_QUEUE_TEST || 'xray_queue_test';
+    const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672';
+    const message = await consumeMessageFromQueue(queueName, rabbitmqUrl);
+
+    expect(message).toHaveProperty('time');
   });
 });
