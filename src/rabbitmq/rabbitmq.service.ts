@@ -5,19 +5,23 @@ import { XrayService } from '../xray/xray.service';
 
 @Injectable()
 export class RabbitmqService {
-    private readonly logger = new Logger(RabbitmqService.name);
+    //private readonly logger = new Logger(RabbitmqService.name);
 
     constructor(private readonly xrayService: XrayService) { }
 
+    static readonly rabbitmq_uri = process.env.NODE_ENV === process.env.TEST_ENV_NAME ? process.env.RABBITMQ_URL_TEST : process.env.RABBITMQ_URL;
+    static readonly exchange = process.env.NODE_ENV === process.env.TEST_ENV_NAME ? process.env.RABBITMQ_EXCHANGE_TEST : process.env.RABBITMQ_EXCHANGE;
+    static readonly queue = process.env.NODE_ENV === process.env.TEST_ENV_NAME ? process.env.RABBITMQ_QUEUE_TEST : process.env.RABBITMQ_QUEUE;
+    static readonly routingKey = process.env.NODE_ENV === process.env.TEST_ENV_NAME ? process.env.RABBITMQ_ROUTING_KEY_TEST : process.env.RABBITMQ_ROUTING_KEY;
+
     @RabbitSubscribe({
-        exchange: 'xray_exchange',
-        routingKey: 'xray_data',
-        queue: 'xray_queue',
+        exchange: RabbitmqService.exchange,
+        routingKey: RabbitmqService.routingKey,
+        queue: RabbitmqService.queue,
     })
 
     async handleXrayMessage(msg: any) {
         try {
-            this.logger.log(`Received message: processing...`);
             const payload = JSON.parse(msg);
 
             const deviceId = Object.keys(payload)[0];
@@ -25,7 +29,6 @@ export class RabbitmqService {
             const time = payload.time;
             const dataLength = deviceData.length;
 
-            this.logger.log(`Done processing message: deviceId=${deviceId}, time=${time}, dataLength=${dataLength}`);
             await this.xrayService.saveXrayData(deviceId, time, dataLength);
 
         } catch (error) {

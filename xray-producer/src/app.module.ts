@@ -15,7 +15,8 @@ import * as amqp from 'amqplib';
           type: 'direct',
         },
       ],
-      uri: process.env.RABBITMQ_URL,
+      uri: process.env.NODE_ENV === process.env.TEST_ENV_NAME ?
+        process.env.RABBITMQ_URL : process.env.RABBITMQ_URL_TEST,
       connectionInitOptions: { wait: false },
     }),
   ],
@@ -40,7 +41,6 @@ export class AppModule implements OnApplicationBootstrap, OnApplicationShutdown 
     await this.channel.assertQueue(queue, { durable: true });
 
     await this.channel.bindQueue(queue, exchange, routingKey);
-    console.log('exchange:', exchange, ', routingKey:', routingKey, ', queue:', queue);
   }
 
   async onApplicationShutdown() {

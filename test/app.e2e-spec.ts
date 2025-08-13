@@ -1,4 +1,5 @@
 import 'dotenv/config';
+process.env.NODE_ENV = process.env.TEST_ENV_NAME;
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -6,6 +7,10 @@ import { AppModule } from './../src/app.module';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
+import * as amqp from 'amqplib';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+
+
 
 async function doWithLog(func: Promise<any>, beforelog: string, afterlog: string, log: boolean = false) {
   if (log) console.log(beforelog);
@@ -13,26 +18,41 @@ async function doWithLog(func: Promise<any>, beforelog: string, afterlog: string
   if (log) console.log(afterlog);
 }
 
-// Mock RabbitMQ-related components
-jest.mock('@golevelup/nestjs-rabbitmq', () => ({
-  RabbitMQModule: {
-    forRoot: jest.fn(),
-  },
-  AmqpConnection: jest.fn().mockImplementation(() => ({
-    publish: jest.fn(),
-  })),
-  RabbitSubscribe: jest.fn(() => () => { }),
-}));
-
-// Mock the RabbitmqModule itself
-jest.mock('../src/rabbitmq/rabbitmq.module', () => ({
-  RabbitmqModule: jest.fn(),
-}));
-
 describe('XrayController (e2e)', () => {
   let app: INestApplication;
   let xrayModel: Model<any>;
   let mongoServer: MongoMemoryServer;
+  let amqpConnection: AmqpConnection;
+
+  async function publishMessage() {
+    const rabbitmqUrl = process.env.RABBITMQ_URL_TEST
+    const exchangeName = process.env.RABBITMQ_EXCHANGE_TEST || '';
+    const routingKey = process.env.RABBITMQ_ROUTING_KEY_TEST || '';
+    const queueName = process.env.RABBITMQ_QUEUE_TEST;
+
+    const message = {
+      '66bb584d4ae73e488c30a072': {
+        'data': [1, 2, 3, 4],
+      },
+      time: Date.now(),
+    };
+
+    const connection = await amqp.connect(rabbitmqUrl);
+    const channel = await connection.createChannel();
+
+    await channel.assertExchange(exchangeName, 'direct', { durable: true });
+    await channel.assertQueue(queueName, { durable: true });
+    await channel.bindQueue(queueName, exchangeName, routingKey);
+
+    if (amqpConnection == undefined) {
+      amqpConnection = amqpConnection = app.get<AmqpConnection>(AmqpConnection);
+    }
+
+    await amqpConnection.publish(exchangeName, routingKey, JSON.stringify(message));
+    await channel.close();
+    await connection.close();
+    return message;
+  }
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
@@ -113,8 +133,6 @@ describe('XrayController (e2e)', () => {
       .get(`/xrays/${createdXray._id}`)
       .expect(200);
 
-    console.log('Response body:', response.body);
-
     expect(response.body).toHaveProperty('_id', createdXray._id.toString());
     expect(response.body).toMatchObject(testData);
   });
@@ -184,7 +202,6 @@ describe('XrayController (e2e)', () => {
   });
 
   it('/xrays/filter (GET) - no results', async () => {
-    // Ensure no data exists for this deviceId and time
     const testData = {
       deviceId: '66bb584d4ae73e488c30a072',
       time: 1735683480000,
@@ -235,6 +252,16 @@ describe('XrayController (e2e)', () => {
     });
   });
 
+  it('RabbitMQ message handling', async () => {
+    const message = await publishMessage();
+
+    const deviceId = Object.keys(message)[0];
+    const data = await xrayModel.find().exec()
+    expect(data.length).toBe(1);
+    expect(data[0]).toHaveProperty('deviceId', deviceId);
+    expect(data[0]).toHaveProperty('time', message.time);
+  });
+
   afterAll(async () => {
     // we can use the logs to debug if needed,
     // only need to pass a true argument at the end of the doWithLog function
@@ -244,6 +271,8 @@ describe('XrayController (e2e)', () => {
     if (mongoServer) await doWithLog(mongoServer.stop(), 'In-memory MongoDB server stopping...', 'In-memory MongoDB server stopped.');
 
     await doWithLog(mongoose.disconnect(), 'Mongoose disconnecting...', 'Mongoose disconnected.');
+
+    await doWithLog(amqpConnection.close(), 'RabbitMQ connection closing...', 'RabbitMQ connection closed.');
   });
 
 });

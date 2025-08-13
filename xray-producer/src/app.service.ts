@@ -39,9 +39,6 @@ export class AppService {
 
 
     const check = await this.amqpConnection.publish(this.exchange, this.routingKey, JSON.stringify(sampleData));
-    console.log('Exchange:', this.exchange, ', routingKey:', this.routingKey);
-
-    if (check) console.log('Sent x-ray data:', sampleData);
     return check;
   }
 }

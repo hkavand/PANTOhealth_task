@@ -9,7 +9,9 @@ import { XrayModule } from '../xray/xray.module';
     RabbitMQModule.forRoot({
       exchanges: [
         {
-          name: process.env.RABBITMQ_EXCHANGE || 'xray_exchange',
+          name: process.env.NODE_ENV === process.env.TEST_ENV_NAME ?
+            process.env.RABBITMQ_EXCHANGE_TEST || 'xray_exchange_test' :
+            process.env.RABBITMQ_EXCHANGE || 'xray_exchange',
           type: 'direct',
         },
       ],
@@ -17,7 +19,7 @@ import { XrayModule } from '../xray/xray.module';
       connectionInitOptions: { wait: false },
     }),
   ],
-  providers: [RabbitmqService],  // Services that will handle message logic
-  exports: [RabbitmqService],    // Export service so other modules can use it if needed
+  providers: [RabbitmqService],
+  exports: [RabbitmqService],
 })
 export class RabbitmqModule { }

@@ -4,7 +4,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
-import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import * as amqp from 'amqplib';
 
 describe('AppController (e2e)', () => {
@@ -38,11 +37,12 @@ describe('AppController (e2e)', () => {
       );
     });
 
+    await channel.close();
+    await connection.close();
     return message;
   }
 
   beforeAll(async () => {
-    console.log(process.env.NODE_ENV == process.env.TEST_ENV_NAME ? 'Running in test mode' : 'Running in production mode');
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -65,7 +65,6 @@ describe('AppController (e2e)', () => {
       message: 'X-ray data sent successfully',
     });
 
-    console.log("X-ray data sent successfully");
     const queueName = process.env.RABBITMQ_QUEUE_TEST || 'xray_queue_test';
     const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672';
     const message = await consumeMessageFromQueue(queueName, rabbitmqUrl);
