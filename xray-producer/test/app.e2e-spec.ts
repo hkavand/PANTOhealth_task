@@ -17,7 +17,6 @@ describe('AppController (e2e)', () => {
 
     await channel.assertQueue(queueName);
 
-    // Consume a message with a timeout
     const message = await new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         reject(new Error(`Timeout: No message received from queue "${queueName}" within ${1000}ms`));
@@ -53,7 +52,6 @@ describe('AppController (e2e)', () => {
 
   afterAll(async () => {
     if (app) await app.close();
-    //await closeConnection();
   });
 
   it('/send-xray (GET)', async () => {

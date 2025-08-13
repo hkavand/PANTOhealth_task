@@ -22,8 +22,6 @@ export class AppModule implements OnApplicationShutdown {
   constructor(@InjectConnection() private readonly connection: Connection) { }
 
   async onApplicationShutdown() {
-    // console.log('Closing MongoDB connection...');
     await this.connection.close();
-    // console.log('MongoDB connection closed.');
   }
 }

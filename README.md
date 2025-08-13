@@ -77,9 +77,7 @@ Before running the applications, ensure you have the following installed:
 
 ### For Both Producer and Consumer
 - **Unit Tests**:
-  ```bash
-  npm run test
-  ```
+   As there is not that much logic in services, I decided to not implement unit tests. I  made sure (to my best of ability) to test everything in e2e tests. 
 
 - **End-to-End Tests**:Before running e2e tests, ensure you have the required dependencies installed:
    ```bash
